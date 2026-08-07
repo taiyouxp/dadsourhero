@@ -1,6 +1,271 @@
-<div class="slide" data-title="Your Title Here">
-    <div class="slide-image-wrapper">
-        <img src="1.png" alt="Description">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dad's our hero</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@350&display=swap" rel="stylesheet">
+ 
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Inter';
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .slider-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            overflow: hidden;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin: 0 auto;
+            background: #ffffff;
+        }
+
+        .slider-title {
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #333;
+            padding: 20px 20px 0 20px;
+        }
+
+        .slider-track {
+            display: flex;
+            transition: transform 0.4s ease-out;
+            cursor: grab;
+        }
+
+        .slider-track:active {
+            cursor: grabbing;
+        }
+
+        .slider-track.dragging {
+            transition: none;
+        }
+
+        .slide {
+            min-width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            user-select: none;
+            -webkit-user-drag: none;
+            padding: 16px 24px 48px 24px;
+            text-align: center;
+        }
+
+        .slide-image-wrapper {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #eee;
+            margin: 0 auto;
+        }
+
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+            -webkit-user-drag: none;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .dots {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 16px;
+            z-index: 10;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.25);
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dot.active {
+            background: #333;
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .slider-container {
+                border-radius: 12px;
+            }
+
+            .slide {
+                padding: 12px 16px 44px 16px;
+            }
+
+            .slider-title {
+                font-size: 1.15rem;
+                padding: 16px 16px 0 16px;
+            }
+
+            .dots {
+                gap: 12px;
+            }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+
+    <div class="slider-container">
+    <div class="slider-title">Continue sendo nosso héroi, pai.<br><br>"B. Aranha" (7.8.26)</div>
+
+        <div class="slider-track" id="track">
+            <div class="slide">
+                <div class="slide-image-wrapper">
+                    <img src="1.png" alt="B Aranha 1">
+                </div>
+            </div>
+            <div class="slide">
+                <div class="slide-image-wrapper">
+                    <img src="2.png" alt="B Aranha 2">
+                </div>
+            </div>
+            <div class="slide">
+                <div class="slide-image-wrapper">
+                    <img src="3.png" alt="B Aranha 3">
+                </div>
+            </div>
+        </div>
+
+        <div class="dots" id="dots"></div>
     </div>
-    <div class="slide-title">B-Aranha </div>
-</div>
+
+    <script>
+        const track = document.getElementById('track');
+        const slides = track.children;
+        const dotsContainer = document.getElementById('dots');
+
+        let current = 0;
+        let isDragging = false;
+        let startX = 0;
+        let currentTranslate = 0;
+        let prevTranslate = 0;
+        let animationID;
+
+        for (let i = 0; i < slides.length; i++) {
+            const dot = document.createElement('button');
+            dot.className = 'dot' + (i === 0 ? ' active' : '');
+            dot.onclick = () => goTo(i);
+            dotsContainer.appendChild(dot);
+        }
+
+        function goTo(index) {
+            if (index < 0) index = slides.length - 1;
+            if (index >= slides.length) index = 0;
+            current = index;
+            updateSlider();
+        }
+
+        function updateSlider() {
+            currentTranslate = -current * 100;
+            prevTranslate = currentTranslate;
+            track.style.transform = `translateX(${currentTranslate}%)`;
+
+            document.querySelectorAll('.dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === current);
+            });
+        }
+
+        track.addEventListener('touchstart', touchStart);
+        track.addEventListener('touchend', touchEnd);
+        track.addEventListener('touchmove', touchMove);
+
+        track.addEventListener('mousedown', touchStart);
+        track.addEventListener('mouseup', touchEnd);
+        track.addEventListener('mouseleave', () => {
+            if (isDragging) touchEnd();
+        });
+        track.addEventListener('mousemove', touchMove);
+
+        function touchStart(e) {
+            isDragging = true;
+            startX = getPositionX(e);
+            track.classList.add('dragging');
+            animationID = requestAnimationFrame(animation);
+        }
+
+        function touchMove(e) {
+            if (!isDragging) return;
+            const currentX = getPositionX(e);
+            const diff = currentX - startX;
+            const containerWidth = track.parentElement.offsetWidth;
+            const movePercent = (diff / containerWidth) * 100;
+            currentTranslate = prevTranslate + movePercent;
+            track.style.transform = `translateX(${currentTranslate}%)`;
+        }
+
+        function touchEnd() {
+            isDragging = false;
+            cancelAnimationFrame(animationID);
+            track.classList.remove('dragging');
+
+            const movedBy = currentTranslate - prevTranslate;
+
+            if (movedBy < -15) {
+                goTo(current + 1);
+            } else if (movedBy > 15) {
+                goTo(current - 1);
+            } else {
+                updateSlider();
+            }
+        }
+
+        function getPositionX(e) {
+            return e.type.includes('mouse') ? e.pageX : e.touches[0].clientX;
+        }
+
+        function animation() {
+            if (isDragging) requestAnimationFrame(animation);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') goTo(current - 1);
+            if (e.key === 'ArrowRight') goTo(current + 1);
+        });
+    </script>
+
+</body>
+</html>
